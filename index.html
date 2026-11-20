@@ -171,6 +171,7 @@ a.btn{text-decoration:none}
 .invite ul{margin:8px 0 12px 18px;font-size:13.5px;line-height:1.5}
 .invite a{display:inline-block;background:#fff;color:#0b6b36;font-weight:800;padding:10px 16px;border-radius:12px;text-decoration:none}
 .invite small{display:block;margin-top:8px;opacity:.9;font-size:12px;word-break:break-all}
+@media(max-width:900px){body.inform .hero{display:none}}
 </style>
 </head>
 <body>
@@ -292,8 +293,8 @@ if($('#obj').value.trim().length>10)p+=.06;if(data.medio)p+=.06;if(data.comp)p+=
 function paint(){$$('.dot').forEach((d,i)=>{d.classList.toggle('on',i===cur);d.classList.toggle('done',i<cur)});
 $('#stepname').textContent=cur>LAST?'✅ Inscripción lista':`Sección ${cur+1} de 6 · ${secs[cur].dataset.name}`;
 $('#conf').textContent='confianza '+(cur>LAST?'0.99':confidence().toFixed(2));
-$('#prev').hidden=cur===0||cur>LAST;$('#next').hidden=cur>LAST;$('#next').innerHTML=cur===LAST?'Inscribirme gratis 🚀':'Siguiente →'}
-function go(n,back){secs[cur].classList.remove('active');cur=n;secs[cur].classList.toggle('back',!!back);secs[cur].classList.add('active');paint();window.scrollTo({top:0,behavior:'smooth'})}
+$('#prev').hidden=cur===0||cur>LAST;$('#next').hidden=cur>LAST;$('#next').innerHTML=cur===LAST?'Enviar inscripción 🚀':'Siguiente →'}
+function go(n,back){secs[cur].classList.remove('active');cur=n;secs[cur].classList.toggle('back',!!back);secs[cur].classList.add('active');paint();document.body.classList.toggle('inform',cur>0);if(innerWidth<=900)window.scrollTo({top:0,behavior:'smooth'});else document.querySelector('.card').scrollIntoView({behavior:'smooth',block:'start'})}
 function setField(el,ok,msg){el.classList.toggle('ok',ok);el.classList.toggle('bad',!ok&&!!msg);const f=el.closest('.field');f.classList.toggle('valid',ok);const m=f.querySelector('.msg');if(m)m.textContent=ok?'':(msg||'')}
 const rules={nombre:v=>v.trim().split(/\s+/).filter(Boolean).length>=2?'':'Escribe tus nombres y apellidos completos.',email:v=>validEmail(v)?'':'Ingresa un correo válido.',tel:v=>v.replace(/\D/g,'').length>=7?'':'Ingresa un número de WhatsApp válido.',empresa:v=>v.trim().length>1?'':'Indica tu institución o empresa.'};
 Object.keys(rules).forEach(id=>{const el=$('#'+id);el.addEventListener('input',()=>{setField(el,!rules[id](el.value),'');paint()});el.addEventListener('blur',()=>{if(el.value){const e=rules[id](el.value);setField(el,!e,e)}})});
@@ -338,17 +339,25 @@ p.append('entry.'+E.medio,OPT.medio[data.medio_i]);p.append('entry.'+E.comp,OPT.
 return p}
 const submitURL=r=>{const p=gfParams(r);p.append('submit','Submit');return GF+'formResponse?'+p.toString()};
 const prefillURL=r=>GF+'viewform?usp=pp_url&'+gfParams(r).toString();
-function finish(){const code='KT-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+String(Math.floor(Math.random()*900)+100);
+async function finish(){
+const code='KT-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+String(Math.floor(Math.random()*900)+100);
 const perfil=data.perfil==='Otro'?'Otro: '+$('#perfilotro').value.trim():data.perfil;
 const r={codigo:code,nombre:$('#nombre').value.trim(),email:$('#email').value.trim(),whatsapp:$('#tel').value.trim(),perfil,empresa:$('#empresa').value.trim(),python:data.python,ia:data.ia,areas:data.areas,problema:$('#obj').value.trim(),medio:data.medio,compromiso:'Confirmado',comunidad:data.comunidad};
+const btn=$('#next');btn.disabled=true;btn.innerHTML='⏳ Enviando…';
+try{
+  await fetch(GF+'formResponse',{method:'POST',mode:'no-cors',body:gfParams(r)});
+}catch(e){
+  btn.disabled=false;btn.innerHTML='Enviar inscripción 🚀';
+  toast('No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.');return;
+}
 const first=r.nombre.split(' ')[0];
-$('#done').innerHTML=`<h2>¡Todo listo, ${esc(first)}! 🎉</h2><p class="lead">Tu ficha está preparada. Un paso más para asegurar tu cupo.</p>
+$('#done').innerHTML=`<h2>¡Inscripción enviada, ${esc(first)}! 🎉</h2><p class="lead">Recibimos tus respuestas. Nos vemos en la primera sesión.</p>
 <div class="ticket"><span class="stamp">DETECTADO 0.99</span><div class="k">KONSTRUTECH · CURSO GRATUITO</div><h3>Computer Vision en AEC</h3><div class="k" style="color:#fff;opacity:.8">20 NOV 2026 · 8:00 PM · ZOOM</div><div class="line"></div>
-<dl><dt>Participante</dt><dd>${esc(r.nombre)}</dd><dt>Correo</dt><dd>${esc(r.email)}</dd><dt>Perfil</dt><dd>${esc(r.perfil)}</dd><dt>Áreas</dt><dd>${r.areas.map(esc).join('; ')}</dd></dl><div class="line"></div><div class="codebox">${code}</div></div>
-<div class="acts"><a class="btn main" style="margin-left:0" id="send" href="${submitURL(r)}" target="_blank" rel="noopener">📨 Enviar mi inscripción</a><a class="btn gf" href="${prefillURL(r)}" target="_blank" rel="noopener">👀 Revisar en el formulario</a><button type="button" class="btn gf" id="copy">📋 Copiar mi ficha</button></div>
-<div class="invite" style="margin-top:14px"><b>💬 ${r.comunidad.startsWith('Sí')?'¡Genial, ya eres parte de la comunidad!':'Únete ahora a la comunidad'}</b><br><a href="https://lix.li/buwHII" target="_blank" rel="noopener" style="margin-top:10px">👉 Comunidad de WhatsApp</a><small>https://lix.li/buwHII</small></div>
-<div class="note"><b>Último paso:</b> al pulsar «Enviar mi inscripción» se abre Google con tus respuestas ya cargadas y se registra en el formulario oficial. Si ves el mensaje de que tu respuesta fue registrada, ¡listo! 🏅 Al aprobar el curso recibirás tu certificado.</div>`;
-$('#copy').onclick=()=>copy(fmt(r));$('#send').addEventListener('click',()=>toast('Abriendo Google Forms… 📨'));go(LAST+1);burst()}
+<dl><dt>Participante</dt><dd>${esc(r.nombre)}</dd><dt>Correo</dt><dd>${esc(r.email)}</dd></dl><div class="line"></div><div class="codebox">${code}</div></div>
+<div class="invite"><b>💬 ${r.comunidad.startsWith('Sí')?'¡Genial, ya eres parte de la comunidad!':'Únete ahora a la comunidad de WhatsApp'}</b><br><a href="https://lix.li/buwHII" target="_blank" rel="noopener" style="margin-top:10px">👉 Comunidad de WhatsApp</a><small>https://lix.li/buwHII</small></div>
+<div class="acts"><button type="button" class="btn main" style="margin-left:0" id="again">➕ Registrar otra persona</button></div>`;
+$('#again').onclick=()=>location.reload();
+btn.disabled=false;go(LAST+1);burst()}
 function fmt(r){return `INSCRIPCIÓN · Computer Vision aplicada a la Ingeniería y Construcción
 Código: ${r.codigo}
 1. Nombres y apellidos: ${r.nombre}

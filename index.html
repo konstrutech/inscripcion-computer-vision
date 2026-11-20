@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inscripción · Computer Vision aplicada a la Ingeniería y Construcción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#053b43; --ink2:#0a5560; --teal:#14b8a6; --teal2:#0d9488; --mint:#e6f7f4;
+  --line:#bfe6e0; --green:#22e35a; --purple:#a64dff; --amber:#ffb703; --bg:#f4fbfa; --white:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+/* ---------- fondo con detecciones flotantes ---------- */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(20,184,166,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,.07) 1px,transparent 1px);background-size:44px 44px}
+.det{position:absolute;border:2px solid var(--c);border-radius:6px;opacity:.0;animation:drift var(--d) ease-in-out infinite;animation-delay:var(--dl)}
+.det span{position:absolute;left:-2px;top:-22px;background:var(--c);color:#fff;font:700 11px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:5px 5px 5px 0;white-space:nowrap}
+@keyframes drift{0%{opacity:0;transform:translate(0,0) scale(.95)}15%{opacity:.55}50%{opacity:.7;transform:translate(24px,-18px) scale(1)}85%{opacity:.5}100%{opacity:0;transform:translate(-10px,14px) scale(.95)}}
+.scan{position:absolute;left:0;right:0;height:140px;background:linear-gradient(180deg,transparent,rgba(20,184,166,.16),transparent);animation:scan 7s linear infinite}
+@keyframes scan{from{top:-140px}to{top:100%}}
+
+/* ---------- layout ---------- */
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:380px 1fr;gap:26px;align-items:start}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.brand{display:flex;align-items:center;gap:12px;grid-column:1/-1}
+.logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--ink),var(--teal2));display:grid;place-items:center;color:#fff;font-weight:900;font-size:26px;box-shadow:0 8px 20px -8px var(--teal2)}
+.brand b{font-size:26px;font-weight:900;letter-spacing:.5px}.brand b i{font-style:normal;color:var(--teal)}
+.brand small{display:block;font-size:12.5px;color:var(--ink2);font-weight:500}
+
+/* panel izquierdo */
+.hero{background:linear-gradient(160deg,var(--ink) 0%,#0a6b72 100%);color:#fff;border-radius:26px;padding:26px 24px 24px;position:sticky;top:18px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(5,59,67,.7)}
+@media(max-width:900px){.hero{position:relative;top:0}}
+.hero:before{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(20,184,166,.55),transparent 70%)}
+.badge{display:inline-flex;gap:8px;align-items:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.6px}
+.hero h1{font-size:44px;line-height:.95;font-weight:900;margin:16px 0 8px;position:relative}
+.hero h1 em{font-style:normal;color:#5eead4;display:block}
+.hero p.sub{font-weight:600;font-size:15px;opacity:.92;position:relative}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0 4px;position:relative}
+.fact{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px 12px}
+.fact small{display:block;font-size:10.5px;letter-spacing:1px;opacity:.75;font-weight:700}
+.fact b{font-size:15px}
+.speaker{margin-top:16px;background:rgba(255,255,255,.12);border-radius:16px;padding:12px 14px;position:relative}
+.speaker small{font-size:10.5px;letter-spacing:1.2px;color:#5eead4;font-weight:800}
+.speaker b{display:block;font-size:17px;font-weight:800}
+.speaker span{font-size:12.5px;opacity:.85}
+.count{margin-top:16px;display:flex;gap:8px;position:relative}
+.count div{flex:1;background:#fff;color:var(--ink);border-radius:12px;text-align:center;padding:8px 0}
+.count b{display:block;font:800 22px 'JetBrains Mono',monospace;line-height:1}
+.count small{font-size:10px;letter-spacing:1px;font-weight:700;color:var(--teal2)}
+.count-label{font-size:11.5px;margin-top:8px;opacity:.85;position:relative}
+
+/* tarjeta de formulario */
+.card{background:var(--white);border-radius:26px;box-shadow:0 30px 60px -34px rgba(5,59,67,.45);border:1px solid var(--line);overflow:hidden}
+.top{padding:20px 26px 8px}
+.steps{display:flex;gap:6px;margin-bottom:14px}
+.dot{flex:1;height:8px;border-radius:99px;background:var(--mint);overflow:hidden;position:relative;cursor:pointer}
+.dot i{position:absolute;inset:0;background:linear-gradient(90deg,var(--teal),var(--teal2));transform:scaleX(0);transform-origin:left;transition:transform .5s cubic-bezier(.3,.9,.3,1)}
+.dot.on i,.dot.done i{transform:scaleX(1)}
+.stepname{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:var(--ink2)}
+.conf{font:700 12px 'JetBrains Mono',monospace;background:var(--ink);color:#5eead4;padding:5px 10px;border-radius:8px}
+.body{padding:8px 26px 8px;min-height:430px;position:relative}
+.step{display:none;animation:in .5s cubic-bezier(.2,.9,.3,1)}
+.step.active{display:block}
+@keyframes in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes inback{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+.step.back{animation-name:inback}
+h2{font-size:26px;font-weight:900;margin:8px 0 2px}
+.lead{color:#3d7078;font-size:14.5px;margin-bottom:18px}
+.field{margin-bottom:16px;position:relative}
+label.l{display:block;font-weight:700;font-size:13.5px;margin-bottom:6px}
+label.l sup{color:#e11d48}
+.inp{width:100%;font:500 16px 'Outfit';padding:14px 16px;border:2px solid var(--line);border-radius:14px;background:#fbfffe;color:var(--ink);outline:none;transition:.2s}
+.inp:focus{border-color:var(--teal);box-shadow:0 0 0 5px rgba(20,184,166,.18);transform:translateY(-1px)}
+.inp.ok{border-color:var(--teal)}
+.inp.bad{border-color:#e11d48;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.msg{font-size:12px;color:#e11d48;min-height:16px;margin-top:4px;font-weight:600}
+.tick{position:absolute;right:14px;top:38px;color:var(--teal);font-weight:900;opacity:0;transform:scale(0);transition:.25s}
+.field.valid .tick{opacity:1;transform:scale(1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}}
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{border:2px solid var(--line);background:#fff;padding:10px 16px;border-radius:99px;font:700 14px 'Outfit';cursor:pointer;color:var(--ink);transition:.2s;user-select:none}
+.chip:hover{transform:translateY(-2px);border-color:var(--teal)}
+.chip.sel{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 8px 18px -8px var(--ink)}
+.chip.sel:before{content:"✓ "}
+/* tarjetas de detección */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.cards{grid-template-columns:1fr}}
+.opt{position:relative;border:2px solid var(--line);border-radius:18px;padding:14px 14px 14px 16px;cursor:pointer;background:#fff;transition:.25s;overflow:hidden}
+.opt:hover{transform:translateY(-3px);box-shadow:0 14px 26px -16px var(--c)}
+.opt .ic{font-size:30px}
+.opt b{display:block;font-size:16px;margin-top:4px}
+.opt small{color:#4a7a82;font-size:12.5px;line-height:1.3;display:block;margin-top:2px}
+.opt .tag{position:absolute;right:10px;top:10px;font:700 11px 'JetBrains Mono';background:var(--c);color:#fff;padding:3px 8px;border-radius:6px;opacity:0;transform:translateY(-6px);transition:.25s}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 8%,white);box-shadow:inset 0 0 0 1px var(--c)}
+.opt.sel .tag{opacity:1;transform:none}
+.opt.sel:after{content:"";position:absolute;inset:6px;border:2px dashed var(--c);border-radius:13px;pointer-events:none;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+/* slider */
+.slider{width:100%;accent-color:var(--teal2);height:8px}
+.lvl{display:flex;justify-content:space-between;font-size:12px;color:#4a7a82;font-weight:600;margin-top:2px}
+.lvlbig{font:800 18px 'Outfit';color:var(--teal2)}
+/* radio horario */
+.toggle{display:flex;background:var(--mint);border-radius:14px;padding:4px;gap:4px}
+.toggle label{flex:1;text-align:center;padding:10px;border-radius:11px;font-weight:700;cursor:pointer;font-size:14px;transition:.2s}
+.toggle input{display:none}
+.toggle input:checked+span{background:var(--ink);color:#fff;box-shadow:0 6px 14px -6px var(--ink)}
+.toggle span{display:block;padding:10px;border-radius:11px}
+.toggle label{padding:0}
+textarea.inp{resize:vertical;min-height:90px}
+.counter{text-align:right;font-size:11.5px;color:#6b9199}
+/* check consent */
+.check{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:2px solid var(--line);border-radius:14px;cursor:pointer;margin-bottom:10px;transition:.2s}
+.check:hover{border-color:var(--teal)}
+.check input{accent-color:var(--teal2);width:20px;height:20px;margin-top:2px;flex:none}
+.check div{font-size:14px;line-height:1.35}
+.check.req.bad{border-color:#e11d48;animation:shake .35s}
+/* nav */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 26px 24px;gap:12px}
+.btn{font:800 16px 'Outfit';border:none;border-radius:16px;padding:15px 26px;cursor:pointer;transition:.2s;display:inline-flex;gap:10px;align-items:center}
+.btn.ghost{background:var(--mint);color:var(--ink2)}
+.btn.ghost:hover{background:var(--line)}
+.btn.main{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;box-shadow:0 14px 26px -12px var(--teal2);margin-left:auto}
+.btn.main:hover{transform:translateY(-2px);box-shadow:0 18px 30px -12px var(--teal2)}
+.btn.main:active{transform:scale(.97)}
+.btn[hidden]{display:none}
+/* resumen / ticket */
+.ticket{border-radius:22px;background:linear-gradient(150deg,var(--ink),#0a6b72);color:#fff;padding:24px;position:relative;overflow:hidden;margin:6px 0 16px;animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7) rotate(-3deg);opacity:0}to{transform:none;opacity:1}}
+.ticket:before,.ticket:after{content:"";position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;top:50%;margin-top:-13px}
+.ticket:before{left:-13px}.ticket:after{right:-13px}
+.ticket .stamp{position:absolute;right:20px;top:18px;font:800 12px 'JetBrains Mono';color:var(--green);border:2px solid var(--green);padding:4px 9px;border-radius:8px;transform:rotate(6deg);letter-spacing:1px}
+.ticket h3{font-size:24px;font-weight:900;margin:4px 0 2px}
+.ticket .k{font-size:11px;letter-spacing:1.2px;color:#5eead4;font-weight:800}
+.ticket .line{border-top:2px dashed rgba(255,255,255,.3);margin:14px 0}
+.ticket dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.ticket dt{opacity:.7}.ticket dd{font-weight:700;word-break:break-word}
+.codebox{font:700 22px 'JetBrains Mono',monospace;letter-spacing:3px;text-align:center;background:rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn.wa{background:#25d366;color:#05361a}
+.btn.gf{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+a.btn{text-decoration:none}
+.note{font-size:12.5px;color:#4a7a82;margin-top:12px;line-height:1.45;background:var(--mint);padding:10px 12px;border-radius:12px}
+/* confeti */
+#confetti{position:fixed;inset:0;z-index:50;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:14px;font-weight:700;z-index:60;transition:.4s}
+.toast.show{transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.rad{display:grid;gap:9px}
+.rad.two{grid-template-columns:1fr 1fr}
+@media(max-width:560px){.rad.two{grid-template-columns:1fr}}
+.ro{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:15px;padding:12px 14px;cursor:pointer;background:#fff;transition:.2s;font-weight:600;font-size:14.5px;position:relative;user-select:none}
+.ro:hover{transform:translateX(4px);border-color:var(--teal)}
+.ro .e{font-size:22px;flex:none}
+.ro:after{content:"";margin-left:auto;width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none;transition:.2s}
+.ro.sel{border-color:var(--teal2);background:var(--mint);box-shadow:0 8px 18px -12px var(--teal2)}
+.ro.sel:after{background:var(--teal2);border-color:var(--teal2);box-shadow:inset 0 0 0 4px #fff}
+.rad.multi .ro:after{border-radius:6px}
+.rad.multi .ro.sel:after{content:"✓";color:#fff;font-size:13px;display:grid;place-items:center;box-shadow:none;font-weight:900}
+.hint{font-size:12.5px;color:#4a7a82;margin:-2px 0 8px;font-style:italic}
+.sec{display:inline-flex;align-items:center;gap:8px;background:var(--mint);color:var(--ink2);font:800 11.5px 'Outfit';letter-spacing:1px;padding:5px 12px;border-radius:99px;text-transform:uppercase}
+.lvlbar{display:flex;gap:4px;margin-top:8px}
+.invite{background:linear-gradient(135deg,#25d366,#128c4a);color:#fff;border-radius:18px;padding:16px 18px;margin:14px 0}
+.invite ul{margin:8px 0 12px 18px;font-size:13.5px;line-height:1.5}
+.invite a{display:inline-block;background:#fff;color:#0b6b36;font-weight:800;padding:10px 16px;border-radius:12px;text-decoration:none}
+.invite small{display:block;margin-top:8px;opacity:.9;font-size:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<div id="bg"><div class="grid"></div><div class="scan"></div></div>
+<canvas id="confetti"></canvas>
+
+<div class="wrap">
+  <div class="brand">
+    <div class="logo">K</div>
+    <div><b>KONSTRU<i>TECH</i></b><small>Tecnología, innovación e inteligencia para el sector AEC</small></div>
+  </div>
+
+  <!-- ===== Panel del curso ===== -->
+  <aside class="hero">
+    <span class="badge">🎓 CURSO GRATUITO</span>
+    <h1>COMPUTER<em>VISION</em></h1>
+    <p class="sub">Aplicada a la Ingeniería y Construcción</p>
+    <div class="facts">
+      <div class="fact"><small>INICIO</small><b>20 NOV 2026</b></div>
+      <div class="fact"><small>HORARIO</small><b>8:00 – 9:30 PM</b></div>
+      <div class="fact"><small>MODALIDAD</small><b>Online · Zoom</b></div>
+      <div class="fact"><small>SESIONES</small><b>5 (Mar y Vie)</b></div>
+    </div>
+    <div class="speaker"><small>PONENTE PRINCIPAL</small><b>Moises Bernal Reque</b><span>Ingeniero Civil · Infraestructura Civil – SEDAPAL</span></div>
+    <div class="speaker"><small>INVITADOS Y JURADOS</small><b>Gaby Morales López · Brayan Alca Vasquez</b><span>Ingenieros Civiles · GEMBRAX</span></div>
+    <div class="count" id="count">
+      <div><b id="cd">0</b><small>DÍAS</small></div><div><b id="ch">0</b><small>HORAS</small></div><div><b id="cm">0</b><small>MIN</small></div><div><b id="cs">0</b><small>SEG</small></div>
+    </div>
+    <p class="count-label">⏱ Falta para la primera sesión · 🏅 Certificado de aprobación</p>
+  </aside>
+
+  <!-- ===== Formulario ===== -->
+  <main class="card">
+    <div class="top">
+      <div class="steps" id="steps"></div>
+      <div class="stepname"><span id="stepname"></span><span class="conf" id="conf">confianza 0.00</span></div>
+    </div>
+
+    <form id="form" class="body" novalidate>
+<section class="step active" data-name="Datos personales">
+<span class="sec">📝 Sección 1 · Datos personales</span><h2>¡Hola! Empecemos 👋</h2>
+<p class="lead">Inscripción gratuita al curso.</p>
+<div class="field"><label class="l">👤 1. Nombres y apellidos completos <sup>*</sup></label><div class="hint">Escribe tus nombres y apellidos tal como deseas que aparezcan en tu certificado.</div>
+<input class="inp" id="nombre" autocomplete="name" placeholder="Ej. Ana Torres Quispe"><span class="tick">✓</span><div class="msg"></div></div>
+<div class="field"><label class="l">📧 2. Correo electrónico <sup>*</sup></label><div class="hint">Registra un correo electrónico activo para recibir las comunicaciones del curso.</div>
+<input class="inp" id="email" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"><span class="tick">✓</span><div class="msg"></div></div>
+<div class="field"><label class="l">📱 3. Número de WhatsApp <sup>*</sup></label><div class="hint">Incluye tu código de país si corresponde. Usaremos este dato para las comunicaciones relacionadas con el curso.</div>
+<input class="inp" id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="+51 999 999 999"><span class="tick">✓</span><div class="msg"></div></div>
+</section>
+
+<section class="step" data-name="Perfil profesional">
+<span class="sec">🎓 Sección 2 · Perfil profesional</span><h2>Tu perfil 🏗️</h2><p class="lead">Así adaptamos los ejemplos a tu realidad.</p>
+<div class="field"><label class="l">🧑‍💼 4. ¿Cuál es tu perfil profesional? <sup>*</sup></label>
+<div class="rad" data-single="perfil"><div class="ro"><span class="e">🎓</span><span>Estudiante universitario</span></div><div class="ro"><span class="e">📜</span><span>Egresado o bachiller</span></div><div class="ro"><span class="e">👷</span><span>Ingeniero civil</span></div><div class="ro"><span class="e">📐</span><span>Arquitecto</span></div><div class="ro"><span class="e">⚙️</span><span>Ingeniero de otra especialidad</span></div><div class="ro"><span class="e">🏢</span><span>Profesional del sector construcción</span></div><div class="ro"><span class="e">💻</span><span>Profesional del área tecnológica</span></div><div class="ro"><span class="e">✏️</span><span>Otro</span></div></div><div class="msg"></div>
+<input class="inp" id="perfilotro" placeholder="Especifica tu perfil" style="display:none;margin-top:10px"></div>
+<div class="field"><label class="l">🏛️ 5. ¿A qué universidad, institución o empresa perteneces? <sup>*</sup></label><div class="hint">Puedes indicar tu universidad, empresa, consultora u organización.</div>
+<input class="inp" id="empresa" placeholder="Universidad / Empresa / Consultora"><span class="tick">✓</span><div class="msg"></div></div>
+</section>
+
+<section class="step" data-name="Conocimientos tecnológicos">
+<span class="sec">💻 Sección 3 · Conocimientos tecnológicos</span><h2>Tu nivel tecnológico 🐍</h2><p class="lead">Sin presión: el curso parte desde los fundamentos.</p>
+<div class="field"><label class="l">🐍 6. ¿Cuál es tu nivel de conocimiento en Python? <sup>*</sup></label>
+<div class="rad" data-single="python"><div class="ro"><span class="e">🌱</span><span>Principiante: nunca he programado</span></div><div class="ro"><span class="e">🟢</span><span>Básico: conozco algunos fundamentos</span></div><div class="ro"><span class="e">🟠</span><span>Intermedio: desarrollo scripts y automatizaciones</span></div><div class="ro"><span class="e">🔵</span><span>Avanzado: desarrollo aplicaciones con Python</span></div></div><div class="msg"></div></div>
+<div class="field"><label class="l">🤖 7. ¿Has trabajado previamente con inteligencia artificial o Computer Vision? <sup>*</sup></label>
+<div class="rad" data-single="ia"><div class="ro"><span class="e">🆕</span><span>No, sería mi primera experiencia</span></div><div class="ro"><span class="e">💡</span><span>He utilizado herramientas de inteligencia artificial</span></div><div class="ro"><span class="e">🐍</span><span>He trabajado con Python u OpenCV</span></div><div class="ro"><span class="e">🧠</span><span>He entrenado modelos de Machine Learning o Deep Learning</span></div><div class="ro"><span class="e">🚀</span><span>Tengo experiencia desarrollando proyectos de Computer Vision</span></div></div><div class="msg"></div></div>
+</section>
+
+<section class="step" data-name="Aplicaciones">
+<span class="sec">🏗️ Sección 4 · Aplicaciones en ingeniería y construcción</span><h2>¿Qué quieres detectar? 🎯</h2><p class="lead">Mira cómo "detecta" tu selección.</p>
+<div class="field"><label class="l">🔍 8. ¿En qué área te gustaría aplicar Computer Vision? <sup>*</sup></label><div class="hint">Selecciona todos los que correspondan.</div>
+<div class="cards" id="areas">
+<div class="opt" style="--c:#16a34a" data-v="Detección de fisuras y patologías estructurales"><span class="tag">Concreto 0.96</span><div class="ic">🧱</div><b>Fisuras y patologías</b><small>Detección de fisuras y patologías estructurales.</small></div>
+<div class="opt" style="--c:#9333ea" data-v="Inspección y monitoreo de infraestructura"><span class="tag">Infra 0.95</span><div class="ic">🌉</div><b>Infraestructura</b><small>Inspección y monitoreo de infraestructura.</small></div>
+<div class="opt" style="--c:#0d9488" data-v="Control de calidad en obras"><span class="tag">Calidad 0.94</span><div class="ic">📋</div><b>Control de calidad</b><small>Control de calidad en obras.</small></div>
+<div class="opt" style="--c:#0fa958" data-v="Seguridad y salud en la construcción"><span class="tag">EPP 0.98</span><div class="ic">🦺</div><b>Seguridad y salud</b><small>Seguridad y salud en la construcción.</small></div>
+<div class="opt" style="--c:#2563eb" data-v="Procesamiento de imágenes y fotogrametría"><span class="tag">Foto 0.93</span><div class="ic">📸</div><b>Imágenes y fotogrametría</b><small>Procesamiento de imágenes y fotogrametría.</small></div>
+<div class="opt" style="--c:#d98a00" data-v="Automatización de procesos de ingeniería"><span class="tag">Auto 0.97</span><div class="ic">⚙️</div><b>Automatización</b><small>Automatización de procesos de ingeniería.</small></div>
+<div class="opt" style="--c:#e11d48" data-v="Otras aplicaciones de inteligencia artificial"><span class="tag">IA 0.92</span><div class="ic">🤖</div><b>Otras aplicaciones de IA</b><small>Otras aplicaciones de inteligencia artificial.</small></div>
+</div><div class="msg" id="intmsg"></div></div>
+<div class="field"><label class="l">💡 9. ¿Qué problema de ingeniería te gustaría resolver utilizando inteligencia artificial?</label><div class="hint">Cuéntanos brevemente tu idea o aplicación de interés.</div>
+<textarea class="inp" id="obj" maxlength="400" placeholder="Ej. Detectar fisuras en las vigas de un edificio…"></textarea><div class="counter"><span id="cc">0</span>/400</div></div>
+</section>
+
+<section class="step" data-name="Participación">
+<span class="sec">📅 Sección 5 · Participación en el curso</span><h2>Tu participación ✨</h2><p class="lead">Clases martes y viernes, 8:00–9:30 PM (hora Perú).</p>
+<div class="field"><label class="l">📣 10. ¿Por qué medio te enteraste de este curso gratuito? <sup>*</sup></label>
+<div class="rad two" data-single="medio"><div class="ro"><span class="e">📷</span><span>Instagram</span></div><div class="ro"><span class="e">💼</span><span>LinkedIn</span></div><div class="ro"><span class="e">📘</span><span>Facebook</span></div><div class="ro"><span class="e">💬</span><span>WhatsApp</span></div><div class="ro"><span class="e">🤝</span><span>Recomendación de un amigo o colega</span></div><div class="ro"><span class="e">🌐</span><span>Otro medio</span></div></div><div class="msg"></div></div>
+<div class="field"><label class="l">✅ 11. ¿Confirmas tu compromiso de participar en las sesiones? <sup>*</sup></label>
+<div class="rad multi" id="comprom"><div class="ro" id="compro"><span class="e">🙌</span><span>Confirmo mi interés en participar activamente en las cinco sesiones y desarrollar las actividades propuestas.</span></div></div><div class="msg" id="cmsg"></div></div>
+</section>
+
+<section class="step" data-name="Comunidad WhatsApp">
+<span class="sec">💬 Sección 6 · Comunidad oficial de WhatsApp</span><h2>Únete a la comunidad 🚀</h2><p class="lead">Ahí compartimos todo lo del curso.</p>
+<div class="field"><label class="l">💬 12. ¿Ya te uniste a nuestra comunidad oficial de WhatsApp? <sup>*</sup></label>
+<div class="rad" data-single="comunidad"><div class="ro"><span class="e">✅</span><span>Sí, ya me uní.</span></div><div class="ro"><span class="e">⏳</span><span>Todavía no, me uniré ahora.</span></div></div><div class="msg"></div></div>
+<div class="invite"><b>🚀 ¡No te quedes fuera!</b><ul><li>🎥 Enlaces de acceso a las sesiones en vivo.</li><li>⏰ Recordatorios y avisos importantes.</li><li>📚 Recursos y materiales complementarios.</li><li>🤖 Novedades sobre inteligencia artificial, BIM y tecnología AEC.</li><li>🤝 Oportunidades para conectar con otros profesionales.</li></ul>
+<a href="https://lix.li/buwHII" target="_blank" rel="noopener">👉 Unirme a la comunidad</a><small>https://lix.li/buwHII</small></div>
+</section>
+<section class="step" data-name="¡Listo!" id="done"></section>
+</form>
+<div class="nav"><button type="button" class="btn ghost" id="prev" hidden>← Atrás</button><button type="button" class="btn main" id="next">Siguiente →</button></div>
+</main></div><div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const FORM_LINK="https://docs.google.com/forms/d/1gVI1ip9Y8yxmrJwIg2fBMWFshI5nuOkfiIJNvhjFklw/viewform";
+const data={perfil:"",python:"",ia:"",medio:"",comunidad:"",areas:[],comp:false};
+let cur=0;const secs=$$('.step'),LAST=5;
+(function(){const items=[["EPP 0.98","#0fa958"],["Maquinaria 0.97","#d98a00"],["Daño en concreto 0.96","#16a34a"],["Daño en pavimento 0.95","#9333ea"],["Casco 0.99","#0d9488"],["Grieta 0.93","#16a34a"]];const bg=$('#bg');
+for(let i=0;i<10;i++){const[t,c]=items[i%6],d=document.createElement('div');d.className='det';d.style.cssText=`--c:${c};--d:${8+Math.random()*6}s;--dl:${-Math.random()*10}s;left:${Math.random()*92}%;top:${8+Math.random()*80}%;width:${70+Math.random()*90}px;height:${50+Math.random()*80}px`;d.innerHTML=`<span>${t}</span>`;bg.appendChild(d)}})();
+function tick(){const z=Math.max(0,new Date("2026-11-20T20:00:00-05:00")-new Date()),p=n=>String(n).padStart(2,'0');
+$('#cd').textContent=Math.floor(z/864e5);$('#ch').textContent=p(Math.floor(z/36e5%24));$('#cm').textContent=p(Math.floor(z/6e4%60));$('#cs').textContent=p(Math.floor(z/1e3%60))}
+tick();setInterval(tick,1000);
+const stepsEl=$('#steps');secs.slice(0,LAST+1).forEach((s,i)=>{const d=document.createElement('div');d.className='dot';d.innerHTML='<i></i>';d.onclick=()=>{if(i<cur&&cur<=LAST)go(i,true)};stepsEl.appendChild(d)});
+const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+function confidence(){let p=0;
+if($('#nombre').value.trim().split(/\s+/).filter(Boolean).length>=2)p+=.1;if(validEmail($('#email').value))p+=.1;if($('#tel').value.replace(/\D/g,'').length>=7)p+=.1;
+if(data.perfil)p+=.08;if($('#empresa').value.trim().length>1)p+=.08;if(data.python)p+=.08;if(data.ia)p+=.08;if(data.areas.length)p+=.12;
+if($('#obj').value.trim().length>10)p+=.06;if(data.medio)p+=.06;if(data.comp)p+=.07;if(data.comunidad)p+=.06;return Math.min(.99,p)}
+function paint(){$$('.dot').forEach((d,i)=>{d.classList.toggle('on',i===cur);d.classList.toggle('done',i<cur)});
+$('#stepname').textContent=cur>LAST?'✅ Inscripción lista':`Sección ${cur+1} de 6 · ${secs[cur].dataset.name}`;
+$('#conf').textContent='confianza '+(cur>LAST?'0.99':confidence().toFixed(2));
+$('#prev').hidden=cur===0||cur>LAST;$('#next').hidden=cur>LAST;$('#next').innerHTML=cur===LAST?'Inscribirme gratis 🚀':'Siguiente →'}
+function go(n,back){secs[cur].classList.remove('active');cur=n;secs[cur].classList.toggle('back',!!back);secs[cur].classList.add('active');paint();window.scrollTo({top:0,behavior:'smooth'})}
+function setField(el,ok,msg){el.classList.toggle('ok',ok);el.classList.toggle('bad',!ok&&!!msg);const f=el.closest('.field');f.classList.toggle('valid',ok);const m=f.querySelector('.msg');if(m)m.textContent=ok?'':(msg||'')}
+const rules={nombre:v=>v.trim().split(/\s+/).filter(Boolean).length>=2?'':'Escribe tus nombres y apellidos completos.',email:v=>validEmail(v)?'':'Ingresa un correo válido.',tel:v=>v.replace(/\D/g,'').length>=7?'':'Ingresa un número de WhatsApp válido.',empresa:v=>v.trim().length>1?'':'Indica tu institución o empresa.'};
+Object.keys(rules).forEach(id=>{const el=$('#'+id);el.addEventListener('input',()=>{setField(el,!rules[id](el.value),'');paint()});el.addEventListener('blur',()=>{if(el.value){const e=rules[id](el.value);setField(el,!e,e)}})});
+function shake(el){el.classList.remove('bad');void el.offsetWidth;el.classList.add('bad')}
+function need(key,sel){if(data[key])return true;const g=$(sel);g.parentElement.querySelector('.msg').textContent='Selecciona una opción.';return false}
+function validate(s){
+if(s===0){let ok=true;['nombre','email','tel'].forEach(id=>{const el=$('#'+id),e=rules[id](el.value);setField(el,!e,e);if(e){ok=false;shake(el)}});return ok}
+if(s===1){let ok=need('perfil','[data-single=perfil]');const e=rules.empresa($('#empresa').value);setField($('#empresa'),!e,e);if(e){ok=false;shake($('#empresa'))}
+if(data.perfil==='Otro'&&!$('#perfilotro').value.trim()){$('#perfilotro').classList.add('bad');ok=false}return ok}
+if(s===2){const a=need('python','[data-single=python]'),b=need('ia','[data-single=ia]');return a&&b}
+if(s===3){if(!data.areas.length){$('#intmsg').textContent='Elige al menos un área para continuar.';return false}return true}
+if(s===4){const a=need('medio','[data-single=medio]');if(!data.comp){$('#cmsg').textContent='Debes confirmar tu compromiso para inscribirte.';shake($('#compro'));return false}return a}
+if(s===5)return need('comunidad','[data-single=comunidad]');return true}
+$$('.rad[data-single]').forEach(g=>{const k=g.dataset.single;g.querySelectorAll('.ro').forEach(c=>c.addEventListener('click',()=>{g.querySelectorAll('.ro').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');data[k]=c.querySelector('span:last-child').textContent;data[k+'_i']=[...g.children].indexOf(c);g.parentElement.querySelector('.msg').textContent='';
+if(k==='perfil'){const o=$('#perfilotro');o.style.display=data.perfil==='Otro'?'block':'none';if(data.perfil==='Otro')o.focus()}paint()}))});
+$('#compro').onclick=e=>{const el=e.currentTarget;el.classList.toggle('sel');data.comp=el.classList.contains('sel');$('#cmsg').textContent='';paint()};
+$$('#areas .opt').forEach(o=>o.addEventListener('click',()=>{o.classList.toggle('sel');data.areas=$$('#areas .opt.sel').map(x=>x.dataset.v);if(data.areas.length)$('#intmsg').textContent='';paint()}));
+$('#obj').oninput=e=>{$('#cc').textContent=e.target.value.length;paint()};
+$('#next').onclick=()=>{if(!validate(cur))return;if(cur===LAST){finish();return}go(cur+1)};
+$('#prev').onclick=()=>go(cur-1,true);
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();$('#next').click()}});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const GF="https://docs.google.com/forms/d/e/1FAIpQLSf_HyTyeSD9mStbwNSsRKkJKBJbuBYfg0DprUIJ9ad-DQTKXQ/";
+const E={nombre:242442536,email:1700626975,tel:1576018124,perfil:1038920466,empresa:378037777,python:1829279768,ia:702343822,areas:1521053374,problema:1380798118,medio:919476673,comp:1768871593,comunidad:713212570};
+const OPT={
+perfil:["Estudiante universitario","Egresado o bachiller","Ingeniero civil","Arquitecto","Ingeniero de otra especialidad","Profesional del sector construcción","Profesional del área tecnológica"],
+python:["🌱 Principiante: nunca he programado","🟢 Básico: conozco algunos fundamentos","🟡 Intermedio: desarrollo scripts y automatizaciones","🔵 Avanzado: desarrollo aplicaciones con Python"],
+ia:["🆕 No, sería mi primera experiencia","💡 He utilizado herramientas de inteligencia artificial","🐍 He trabajado con Python u OpenCV","🧠 He entrenado modelos de Machine Learning o Deep Learning","🚀 Tengo experiencia desarrollando proyectos de Computer Vision"],
+areas:["🧱 Detección de fisuras y patologías estructurales.","🏢 Inspección y monitoreo de infraestructura.","📋 Control de calidad en obras.","🦺 Seguridad y salud en la construcción.","🛰️ Procesamiento de imágenes y fotogrametría.","⚙️ Automatización de procesos de ingeniería.","🤖 Otras aplicaciones de inteligencia artificial."],
+medio:["📸 Instagram","💼 LinkedIn.","📘 Facebook","💬 WhatsApp","🤝 Recomendación de un amigo o colega","🌐 Otro medio"],
+comp:"Confirmo mi interés en participar activamente en las cinco sesiones y desarrollar las actividades propuestas.",
+comunidad:["✅ Sí, ya me uní.","⏳ Todavía no, me uniré ahora."]};
+function gfParams(r){const p=new URLSearchParams();
+
+p.append('entry.'+E.nombre,r.nombre);p.append('entry.'+E.email,r.email);p.append('entry.'+E.tel,r.whatsapp);
+if(data.perfil_i>=OPT.perfil.length){p.append('entry.'+E.perfil,'__other_option__');p.append('entry.'+E.perfil+'.other_option_response',$('#perfilotro').value.trim())}else p.append('entry.'+E.perfil,OPT.perfil[data.perfil_i]);
+p.append('entry.'+E.empresa,r.empresa);p.append('entry.'+E.python,OPT.python[data.python_i]);p.append('entry.'+E.ia,OPT.ia[data.ia_i]);
+$$('#areas .opt').forEach((o,i)=>{if(o.classList.contains('sel'))p.append('entry.'+E.areas,OPT.areas[i])});
+if(r.problema)p.append('entry.'+E.problema,r.problema);
+p.append('entry.'+E.medio,OPT.medio[data.medio_i]);p.append('entry.'+E.comp,OPT.comp);p.append('entry.'+E.comunidad,OPT.comunidad[data.comunidad_i]);
+return p}
+const submitURL=r=>{const p=gfParams(r);p.append('submit','Submit');return GF+'formResponse?'+p.toString()};
+const prefillURL=r=>GF+'viewform?usp=pp_url&'+gfParams(r).toString();
+function finish(){const code='KT-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+String(Math.floor(Math.random()*900)+100);
+const perfil=data.perfil==='Otro'?'Otro: '+$('#perfilotro').value.trim():data.perfil;
+const r={codigo:code,nombre:$('#nombre').value.trim(),email:$('#email').value.trim(),whatsapp:$('#tel').value.trim(),perfil,empresa:$('#empresa').value.trim(),python:data.python,ia:data.ia,areas:data.areas,problema:$('#obj').value.trim(),medio:data.medio,compromiso:'Confirmado',comunidad:data.comunidad};
+const first=r.nombre.split(' ')[0];
+$('#done').innerHTML=`<h2>¡Todo listo, ${esc(first)}! 🎉</h2><p class="lead">Tu ficha está preparada. Un paso más para asegurar tu cupo.</p>
+<div class="ticket"><span class="stamp">DETECTADO 0.99</span><div class="k">KONSTRUTECH · CURSO GRATUITO</div><h3>Computer Vision en AEC</h3><div class="k" style="color:#fff;opacity:.8">20 NOV 2026 · 8:00 PM · ZOOM</div><div class="line"></div>
+<dl><dt>Participante</dt><dd>${esc(r.nombre)}</dd><dt>Correo</dt><dd>${esc(r.email)}</dd><dt>Perfil</dt><dd>${esc(r.perfil)}</dd><dt>Áreas</dt><dd>${r.areas.map(esc).join('; ')}</dd></dl><div class="line"></div><div class="codebox">${code}</div></div>
+<div class="acts"><a class="btn main" style="margin-left:0" id="send" href="${submitURL(r)}" target="_blank" rel="noopener">📨 Enviar mi inscripción</a><a class="btn gf" href="${prefillURL(r)}" target="_blank" rel="noopener">👀 Revisar en el formulario</a><button type="button" class="btn gf" id="copy">📋 Copiar mi ficha</button></div>
+<div class="invite" style="margin-top:14px"><b>💬 ${r.comunidad.startsWith('Sí')?'¡Genial, ya eres parte de la comunidad!':'Únete ahora a la comunidad'}</b><br><a href="https://lix.li/buwHII" target="_blank" rel="noopener" style="margin-top:10px">👉 Comunidad de WhatsApp</a><small>https://lix.li/buwHII</small></div>
+<div class="note"><b>Último paso:</b> al pulsar «Enviar mi inscripción» se abre Google con tus respuestas ya cargadas y se registra en el formulario oficial. Si ves el mensaje de que tu respuesta fue registrada, ¡listo! 🏅 Al aprobar el curso recibirás tu certificado.</div>`;
+$('#copy').onclick=()=>copy(fmt(r));$('#send').addEventListener('click',()=>toast('Abriendo Google Forms… 📨'));go(LAST+1);burst()}
+function fmt(r){return `INSCRIPCIÓN · Computer Vision aplicada a la Ingeniería y Construcción
+Código: ${r.codigo}
+1. Nombres y apellidos: ${r.nombre}
+2. Correo: ${r.email}
+3. WhatsApp: ${r.whatsapp}
+4. Perfil profesional: ${r.perfil}
+5. Institución/empresa: ${r.empresa}
+6. Nivel de Python: ${r.python}
+7. Experiencia en IA/Computer Vision: ${r.ia}
+8. Áreas de aplicación: ${r.areas.join('; ')}
+9. Problema a resolver: ${r.problema||'-'}
+10. Medio por el que se enteró: ${r.medio}
+11. Compromiso: ${r.compromiso}
+12. ¿Ya en la comunidad de WhatsApp?: ${r.comunidad}`}
+function copy(t){const ok=()=>toast('¡Ficha copiada! ✅'),fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('No se pudo copiar')}a.remove()};try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400)}
+function burst(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const c=$('#confetti'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const cols=['#14b8a6','#053b43','#22e35a','#a64dff','#ffb703','#5eead4'];
+const ps=Array.from({length:160},()=>({x:innerWidth/2,y:innerHeight*.45,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,s:5+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[Math.random()*6|0]}));let f=0;
+(function a(){x.clearRect(0,0,c.width,c.height);ps.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});if(++f<150)requestAnimationFrame(a);else x.clearRect(0,0,c.width,c.height)})()}
+paint();
+</script></body></html>
